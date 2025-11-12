@@ -1,0 +1,22 @@
+{
+  "coverage": {
+    "sparse_upper": 5000,
+    "moderate_upper": 20000,
+    "notes": [
+      "Sparse coverage corresponds to fewer than 5,000 valid observations per node.",
+      "Moderate coverage spans from 5,000 up to 20,000 observations; above that a node is dense."
+    ]
+  },
+  "continuity": {
+    "long_gap_min_days": 1150.0,
+    "extreme_gap_min_days": 1200.0,
+    "notes": [
+      "Long gaps start once the maximum consecutive gap exceeds roughly 3.15 years (~1,150 days).",
+      "Extreme gaps reflect outages longer than 1,200 days (≈3.29 years)."
+    ]
+  },
+  "notes": [
+    "Thresholds reflect HF-EOLUS SAR range final analysis (audits dated 2025-10-21).",
+    "Adjust the numbers if reusing the taxonomy on datasets with different sampling cadence or duration."
+  ]
+}

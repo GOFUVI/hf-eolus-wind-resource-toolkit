@@ -1,0 +1,62 @@
+{
+  "node_summary": "artifacts/power_estimates/node_summary/node_summary.csv",
+  "taxonomy": "config/node_taxonomy.json",
+  "output_dir": "artifacts/power_estimates/geospatial",
+  "stac": {
+    "config_path": "config/stac_catalogs.json",
+    "dataset": "sar_range_final_pivots_joined"
+  },
+  "ann_dataset": null,
+  "image": "duckdb/duckdb:latest",
+  "engine": "docker",
+  "max_wind_roses": 4,
+  "buoy": {
+    "enable": true,
+    "dataset": "use_case/catalogs/pde_vilano_buoy/assets/Vilano.parquet",
+    "node_id": "Vilano_buoy"
+  },
+  "outputs": {
+    "node_resource_map": "node_resource_map.csv",
+    "node_resource_parquet": "node_resource_map.parquet",
+    "node_resource_geojson": "node_resource_map.geojson",
+    "power_density_map": "power_density_map.svg",
+    "uncertainty_map": "uncertainty_map.svg",
+    "wind_rose_panels": "wind_rose_panels.svg",
+    "buoy_wind_rose_panels": "buoy_wind_rose_panels.svg",
+    "wind_rose_histogram": "wind_rose_histogram.csv",
+    "buoy_wind_rose_histogram": "buoy_wind_rose_histogram.csv",
+    "buoy_wind_rose_stats": "buoy_wind_rose_stats.csv",
+    "metadata": "metadata.json"
+  },
+  "style": {
+    "figure_scale": 1.2,
+    "node_padding": 0.05,
+    "low_coverage_stroke": "#22c55e",
+    "low_coverage_stroke_width": 2.5,
+    "label_note": "Named nodes highlight locations discussed in the analysis.",
+    "uncertainty_note": "Metric shown = KM P90 minus KM P50 (m/s). Hollow markers indicate nodes published via Weibull.",
+    "reference_outline": "#0ea5e9",
+    "reference_outline_width": 3.0,
+    "reference_note": "Blue outline marks buoy comparison node.",
+    "power_gradient": { "start": "#1d4ed8", "end": "#f97316" },
+    "uncertainty_gradient": { "start": "#2563eb", "end": "#facc15" },
+    "missing_marker": {
+      "fill": "#ffffff",
+      "outline": "#cbd5f5",
+      "stroke_width": 1.3,
+      "legend": "Hollow marker: KM spread unavailable (Weibull selected)"
+    }
+  },
+  "power_uncertainty": {
+    "summary": "artifacts/bootstrap_velocity_block/bootstrap_summary.csv",
+    "fields": {
+      "estimate": "power_density_estimate",
+      "lower": "power_density_lower",
+      "upper": "power_density_upper",
+      "bootstrap_estimate": "power_density_bootstrap_estimate",
+      "replicates": "power_density_replicates",
+      "confidence": null
+    },
+    "metadata": "artifacts/bootstrap_velocity_block/bootstrap_metadata.json"
+  }
+}

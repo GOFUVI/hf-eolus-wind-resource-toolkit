@@ -1,0 +1,8 @@
+{
+  "min_observations": 1000,
+  "min_consecutive_gap_days": 730.0,
+  "notes": [
+    "Flag nodes with scarce coverage (<1000 valid samples) and long consecutive gaps (>2 years).",
+    "Override thresholds through scripts/update_node_taxonomy.py CLI switches when project-specific values are required."
+  ]
+}

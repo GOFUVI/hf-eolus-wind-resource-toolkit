@@ -1,0 +1,22 @@
+{
+  "sar_range_final_pivots_joined": {
+    "collection": "use_case/catalogs/sar_range_final_pivots_joined/collection.json",
+    "default_item": "data",
+    "default_asset": "data",
+    "doi": "10.5281/zenodo.17131227",
+    "notes": [
+      "HF-EOLUS ANN demo snapshot (VILA + PRIO nodes, SAR range-aware inversion).",
+      "Override the collection path and DOI when wiring a different ANN dataset."
+    ]
+  },
+  "pde_vilano_buoy": {
+    "collection": "use_case/catalogs/pde_vilano_buoy/collection.json",
+    "default_item": "Vilano",
+    "default_asset": "data",
+    "doi": "10.5281/zenodo.17098037",
+    "notes": [
+      "Puertos del Estado Vilano buoy GeoParquet bundle used for the HF-EOLUS validation example.",
+      "Use as a template for future buoy catalogues; update the DOI/path per deployment."
+    ]
+  }
+}

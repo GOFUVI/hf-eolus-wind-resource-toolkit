@@ -1,0 +1,9 @@
+{
+  "schema_version": "2025-11-11",
+  "max_gap_months": 6,
+  "min_segment_months": 36,
+  "notes": [
+    "Defaults derived from the HF-EOLUS ANN temporal audit: mark sequences with gaps longer than 6 months as discontinuous.",
+    "Require at least 36 consecutive months per analysis segment; adjust both thresholds if the training archive covers a shorter horizon."
+  ]
+}

@@ -1,0 +1,10 @@
+.git
+.gitignore
+audits/
+catalogs/
+docs/
+tests/
+AGENTS.md
+README.md
+TODO.md
+tasks_log/

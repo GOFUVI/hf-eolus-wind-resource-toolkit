@@ -1,0 +1,8 @@
+{
+  "method": "log_profile",
+  "measurement_height_m": 3.0,
+  "target_height_m": 10.0,
+  "power_law_alpha": 0.11,
+  "roughness_length_m": 0.0002,
+  "notes": "Default Puertos del Estado REDEXT buoy configuration using a neutral logarithmic profile (anemometer at 3 m above MSL extrapolated to 10 m)."
+}

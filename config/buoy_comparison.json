@@ -1,0 +1,22 @@
+{
+  "_template_note": "Copy this template next to your case-specific inputs (e.g. use_case/config/buoy_comparison.json) and update the paths and identifiers before running the comparison helper.",
+  "matched_dataset": "artifacts/processed/buoy_synced.parquet",
+  "node_id": "example_buoy",
+  "output_dir": "artifacts/buoy_validation",
+  "buoy_dataset": "use_case/catalogs/<buoy_catalog>/assets/<file>.parquet",
+  "paired_summary": "artifacts/processed/buoy_summary.json",
+  "air_density": 1.225,
+  "min_confidence": 0.5,
+  "min_in_range": 500.0,
+  "power_curve_config": "config/power_curves.json",
+  "power_curve_key": "reference_offshore_6mw",
+  "height_config": "config/power_height.json",
+  "range_thresholds": "config/range_thresholds.json",
+  "bootstrap_summary": "artifacts/bootstrap_velocity_block/bootstrap_summary.csv",
+  "buoy_block_config": "artifacts/buoy_validation/buoy_block_bootstrap.json",
+  "right_tail_surrogate": 17.8,
+  "buoy_bootstrap_replicates": 200,
+  "buoy_bootstrap_confidence": 0.95,
+  "ann_paired_bootstrap_replicates": 200,
+  "overwrite": false
+}

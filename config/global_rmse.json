@@ -1,0 +1,27 @@
+{
+  "schema_version": "2025-10-18",
+  "template": {
+    "name": "HF-EOLUS Vilano buoy comparison",
+    "ann_dataset_doi": "10.5281/zenodo.17131227",
+    "buoy_dataset_doi": "10.5281/zenodo.17098037",
+    "notes": [
+      "Example RMSE catalogue derived from the ANN vs. Vilano buoy validation delivered by HF-EOLUS (Task 5).",
+      "Regenerate this file via scripts/generate_buoy_resource_comparison.py or hf_wind_resource.cli validate_buoy once a new reference dataset and DOI are available."
+    ]
+  },
+  "records": [
+    {
+      "version": "2025-10-18_vilano_global_rmse",
+      "value": 2.802399,
+      "unit": "m/s",
+      "effective_from": "2025-10-18T00:00:00Z",
+      "effective_until": null,
+      "source": "HF-EOLUS ANN vs. Vilano buoy benchmark datasets (DOI: 10.5281/zenodo.17131227 / 10.5281/zenodo.17098037)",
+      "computed_at": "2025-10-18T00:00:00Z",
+      "notes": [
+        "RMSE computed on the within-range and classification-matched subset of the HF-EOLUS ANN vs. Vilano buoy benchmark published in Zenodo (10.5281/zenodo.17131227 / 10.5281/zenodo.17098037).",
+        "Datasets: ANN inference DOI 10.5281/zenodo.17131227; Vilano buoy DOI 10.5281/zenodo.17098037."
+      ]
+    }
+  ]
+}

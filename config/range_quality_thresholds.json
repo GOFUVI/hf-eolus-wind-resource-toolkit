@@ -1,0 +1,16 @@
+{
+  "schema_version": "2025-10-23",
+  "min_in_range_count": 500,
+  "min_in_range_ratio": 0.2,
+  "max_total_censored_ratio": 0.8,
+  "max_left_censored_ratio": 0.75,
+  "max_right_censored_ratio": 0.25,
+  "max_uncertain_ratio": 0.1,
+  "min_temporal_coverage": 0.65,
+  "max_gap_hours": 720,
+  "notes": {
+    "min_in_range_count": "Matches the Weibull reliability threshold documented in docs/weibull_censoring_methodology.md.",
+    "max_total_censored_ratio": "Nodes exceeding this share of censored samples should rely on non-parametric resource metrics.",
+    "max_gap_hours": "Gaps longer than 30 days signal temporal discontinuities requiring manual inspection."
+  }
+}

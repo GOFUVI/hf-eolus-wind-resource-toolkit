@@ -1,0 +1,20 @@
+{
+  "schema_version": "2025-10-19",
+  "lower": 5.7,
+  "upper": 17.8,
+  "range_flag_threshold": 0.5,
+  "source": {
+    "range_bounds": {
+      "document": "docs/sar_range_final_schema.md",
+      "notes": "Physical validity range for ANN wind-speed regression"
+    },
+    "range_flag_threshold": {
+      "document": "/Users/jherrera/Dropbox/Work/Ramiro/hf-wind-inversion/hf_eolus/sar/fine_tuning_l2sp/script_args.json",
+      "notes": "Value exported by SAR fine-tuning inference configuration (`range_flag_threshold`)"
+    }
+  },
+  "notes": [
+    "Defaults extracted from the HF-EOLUS SAR range-final release (HF radar @ 13.5 MHz with ANN regression limited to 5.7–17.8 m/s).",
+    "Revise the bounds and classifier threshold whenever the ANN is retrained or applied to radars with different carrier frequencies."
+  ]
+}

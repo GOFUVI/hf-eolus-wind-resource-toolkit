@@ -1,0 +1,8 @@
+{
+  "method": "log",
+  "source_height_m": 10.0,
+  "target_height_m": null,
+  "power_law_alpha": 0.11,
+  "roughness_length_m": 0.0002,
+  "notes": "Default vertical extrapolation for ANN-derived winds (log-law referenced to 10 m with coastal roughness)."
+}

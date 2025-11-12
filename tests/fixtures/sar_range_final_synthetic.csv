@@ -1,0 +1,13 @@
+timestamp,node_id,geometry,pred_wind_speed,pred_range_label,pred_speed_range_label,pred_range_confidence,prob_range_below,prob_range_in,prob_range_above,range_flag,range_flag_confident,range_near_lower_margin,range_near_upper_margin,range_near_any_margin,pred_wind_direction,pred_cos_wind_dir,pred_sin_wind_dir
+2024-01-01T00:00:00Z,VILA_PRIO01,010100000033333333333322c03333333333b34540,5.3,below,below,0.86,0.86,0.12,0.02,below,true,true,false,true,45,0.70710678,0.70710678
+2024-01-01T00:30:00Z,VILA_PRIO01,010100000033333333333322c03333333333b34540,6.1,in,in,0.9,0.08,0.9,0.02,in,true,false,false,false,135,-0.70710678,0.70710678
+2024-01-01T01:00:00Z,VILA_PRIO01,010100000033333333333322c03333333333b34540,17.2,in,above,0.7,0.05,0.7,0.25,uncertain,false,false,true,true,225,-0.70710678,-0.70710678
+2024-01-01T01:30:00Z,VILA_PRIO01,010100000033333333333322c03333333333b34540,18.5,above,above,0.7,0.1,0.2,0.7,above,true,false,true,true,315,0.70710678,-0.70710678
+2024-01-01T00:00:00Z,VILA_PRIO20,0101000000cdcccccccccc21c09a99999999994540,5.7,in,below,0.34,0.34,0.33,0.33,uncertain,false,true,false,true,90,0.00000000,1.00000000
+2024-01-01T01:00:00Z,VILA_PRIO20,0101000000cdcccccccccc21c09a99999999994540,10.0,in,in,0.86,0.08,0.86,0.06,in,true,false,false,false,180,-1.00000000,0.00000000
+2024-01-01T02:00:00Z,VILA_PRIO20,0101000000cdcccccccccc21c09a99999999994540,17.8,above,above,0.5,0.15,0.35,0.5,above,false,false,true,true,210,-0.86602540,-0.50000000
+2024-01-01T03:30:00Z,VILA_PRIO20,0101000000cdcccccccccc21c09a99999999994540,17.0,above,in,0.45,0.2,0.45,0.35,uncertain,false,false,true,true,240,-0.50000000,-0.86602540
+2024-01-01T00:10:00Z,VILA_PRIO35,010100000000000000000021c09a99999999d94540,4.8,below,below,0.88,0.88,0.1,0.02,below,true,false,false,false,30,0.86602540,0.50000000
+2024-01-01T00:40:00Z,VILA_PRIO35,010100000000000000000021c09a99999999d94540,14.5,in,in,0.9,0.05,0.9,0.05,in,true,false,false,false,60,0.50000000,0.86602540
+2024-01-01T01:15:00Z,VILA_PRIO35,010100000000000000000021c09a99999999d94540,19.0,above,above,0.8,0.05,0.15,0.8,above,true,false,true,true,330,0.86602540,-0.50000000
+2024-01-01T01:45:00Z,VILA_PRIO35,010100000000000000000021c09a99999999d94540,6.5,below,in,0.4,0.4,0.45,0.15,uncertain,false,true,false,true,15,0.96592583,0.25881905

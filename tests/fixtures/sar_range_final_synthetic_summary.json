@@ -1,0 +1,19 @@
+{
+  "combo_counts": {
+    "above::above": 3,
+    "above::in": 1,
+    "below::below": 2,
+    "below::in": 1,
+    "in::above": 1,
+    "in::below": 1,
+    "in::in": 3
+  },
+  "label_counts": {
+    "above": 4,
+    "below": 3,
+    "in": 5
+  },
+  "lower_limit": 5.7,
+  "seed": 20241019,
+  "upper_limit": 17.8
+}

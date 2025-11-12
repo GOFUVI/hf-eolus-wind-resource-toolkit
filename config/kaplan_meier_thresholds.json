@@ -1,0 +1,9 @@
+{
+  "schema_version": "2025-10-22",
+  "min_total_observations": 200,
+  "min_total_censored_ratio": 0.2,
+  "min_below_ratio": 0.15,
+  "max_valid_share": 0.55,
+  "min_uncensored_weight": 150.0,
+  "notes": "Fallback thresholds for the weighted Kaplan–Meier estimator. Adjust per deployment."
+}
