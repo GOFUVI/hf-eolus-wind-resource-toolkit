@@ -17,6 +17,12 @@ Toolkit for estimating offshore wind-resource metrics from HF-radar ANN inferenc
 
 > **Publishing note:** when mirroring this repository into a public toolkit, omit any internal planning or audit folders that are present only for coordination purposes.
 
+## Citation
+If this toolkit contributes to your work, cite the Zenodo release so the software provenance remains traceable:
+
+> Herrera Cortijo, J. L., Fernández-Baladrón, A., Rosón, G., Gil Coto, M., Dubert, J., & Varela Benvenuto, R. (2025). *HF EOLUS Wind Resource Toolkit (v0.1.0)* (Version 0.1.0). Zenodo. https://doi.org/10.5281/zenodo.17591545
+
+
 ## Documentation map
 - [`docs/sar_range_final_schema.md`](docs/sar_range_final_schema.md): Schema handbook for the ANN GeoParquet (column definitions, QA semantics, DuckDB recipes, and adaptation notes for new catalogues).
 - [`docs/python_architecture.md`](docs/python_architecture.md): Repository layout, regeneration workflow for configuration artefacts, testing approach, and offline/Docker execution guidelines.
