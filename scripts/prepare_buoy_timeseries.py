@@ -49,6 +49,16 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--ann-kind",
+        choices=("ann", "uncensored"),
+        default="ann",
+        help=(
+            "Interpretation of the ANN dataset: use 'ann' for standard inference snapshots "
+            "or 'uncensored' for generic wind series (e.g., interpolated models) that lack "
+            "pred_* columns. Defaults to ann."
+        ),
+    )
+    parser.add_argument(
         "--stac-config",
         type=Path,
         default=DEFAULT_STAC_CONFIG,
@@ -251,6 +261,7 @@ def main() -> None:
         height_correction_config=height_config,
         sentinel_config=BuoySentinelConfig(),
         synchronisation_config=sync_config,
+        ann_dataset_kind=args.ann_kind,
     )
 
     print("Buoy preparation summary")

@@ -414,6 +414,7 @@ def main() -> None:
         "timestamp_ann",
         "timestamp_buoy",
         "node_id",
+        "node_id_x",
         "pred_wind_direction",
         "pred_wind_speed",
         "range_flag",
@@ -421,7 +422,14 @@ def main() -> None:
         "wind_dir",
         "wind_speed",
     ]
-    frame = pd.read_parquet(dataset_path, columns=columns)
+    available = pd.read_parquet(dataset_path).columns
+    load_columns = [column for column in columns if column in available]
+    frame = pd.read_parquet(dataset_path, columns=load_columns)
+    if "node_id" not in frame.columns:
+        if "node_id_x" in frame.columns:
+            frame["node_id"] = frame["node_id_x"]
+        else:
+            raise KeyError("Matched dataset must include 'node_id' or 'node_id_x'.")
     frame = frame.reset_index(drop=True)
     frame["range_flag_normalized"] = _normalise_range_flag(frame["range_flag"])
 

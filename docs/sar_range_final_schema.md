@@ -1,7 +1,7 @@
 # SAR Range Final Pivots Joined Schema
 
 ## Dataset overview
-- Source: HF radar observations from VILA and PRIO stations processed with the SAR range-aware ANN inversion pipeline (see `docs/hf_dev_plan.md` and Zenodo DOI 10.5281/zenodo.17131227).
+- Source: HF radar observations from VILA and PRIO stations processed with the SAR range-aware ANN inversion pipeline (see `docs/hf_dev_plan.md` and Zenodo DOI 10.5281/zenodo.17464583).
 - Table name: `sar_range_final_pivots_joined` (STAC table extension).
 - Coverage: 1,158,085 rows spanning 2011-09-30T07:30:00Z to 2023-05-10T07:30:00Z, bounding box [-10.1651, 43.0180, -8.1672, 44.4621] in CRS84.
 - Row count validated on 2025-10-18 with DuckDB (`duckdb/duckdb:latest`):

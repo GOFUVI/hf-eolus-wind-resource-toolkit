@@ -38,6 +38,9 @@ def compute_node_dependence_metrics(
     lags: Sequence[int] = (1, 2, 3),
     min_pairs: int = 30,
     max_block_length: int | None = None,
+    dataset_kind: str = "ann",
+    node_column: str | None = "node_id",
+    node_id_override: str = "default_node",
 ) -> list[NodeDependenceMetrics]:
     """Estimate autocorrelations and block-bootstrap hints for each node.
 
@@ -55,6 +58,14 @@ def compute_node_dependence_metrics(
     max_block_length:
         Optional cap for the suggested moving-block length. When ``None`` the
         suggestion is only bounded by the available sample size.
+    dataset_kind:
+        Either ``"ann"`` (expects ``pred_wind_speed``) or ``"uncensored"``
+        (expects ``wind_speed``).
+    node_column:
+        Column holding the node identifier. When ``None``, a constant
+        identifier is injected using ``node_id_override``.
+    node_id_override:
+        Constant node identifier to use when ``node_column`` is ``None``.
 
     Returns
     -------
@@ -69,11 +80,22 @@ def compute_node_dependence_metrics(
 
     parquet_path = dataset_path.resolve().as_posix()
 
+    if dataset_kind == "ann":
+        speed_column = "pred_wind_speed"
+    elif dataset_kind == "uncensored":
+        speed_column = "wind_speed"
+    else:
+        raise ValueError(f"Unsupported dataset_kind: {dataset_kind}")
+
     con = duckdb.connect()
+    node_expr = f"'{node_id_override}' AS node_id" if node_column is None else f"{node_column} AS node_id"
     base_query = f"""
-        SELECT node_id, timestamp, pred_wind_speed
+        SELECT
+            {node_expr},
+            CAST(timestamp AS TIMESTAMP) AS ts,
+            {speed_column} AS speed
         FROM read_parquet('{parquet_path}')
-        WHERE pred_wind_speed IS NOT NULL
+        WHERE {speed_column} IS NOT NULL
     """
     con.execute(f"CREATE OR REPLACE TEMP VIEW ann_base AS {base_query}")
 
@@ -89,12 +111,12 @@ def compute_node_dependence_metrics(
     gap_df = con.execute(
         """
         SELECT node_id,
-               AVG(DATEDIFF('second', lag_ts, timestamp)) AS mean_gap_seconds,
-               STDDEV_SAMP(DATEDIFF('second', lag_ts, timestamp)) AS std_gap_seconds
+               AVG(DATEDIFF('second', lag_ts, ts)) AS mean_gap_seconds,
+               STDDEV_SAMP(DATEDIFF('second', lag_ts, ts)) AS std_gap_seconds
         FROM (
             SELECT node_id,
-                   timestamp,
-                   LAG(timestamp) OVER (PARTITION BY node_id ORDER BY timestamp) AS lag_ts
+                   ts,
+                   LAG(ts) OVER (PARTITION BY node_id ORDER BY ts) AS lag_ts
             FROM ann_base
         )
         WHERE lag_ts IS NOT NULL
@@ -113,9 +135,9 @@ def compute_node_dependence_metrics(
                    CORR(current_speed, lag_speed) AS acf_lag_{lag}
             FROM (
                 SELECT node_id,
-                       pred_wind_speed AS current_speed,
-                       LAG(pred_wind_speed, {lag})
-                           OVER (PARTITION BY node_id ORDER BY timestamp) AS lag_speed
+                       speed AS current_speed,
+                       LAG(speed, {lag})
+                           OVER (PARTITION BY node_id ORDER BY ts) AS lag_speed
                 FROM ann_base
             )
             WHERE lag_speed IS NOT NULL

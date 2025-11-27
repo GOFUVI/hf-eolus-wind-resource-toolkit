@@ -42,6 +42,10 @@ FLAG_MAP: Final[dict[str, str]] = {
     "resource_buoy_bootstrap_replicates": "--resource-buoy-bootstrap-replicates",
     "resource_buoy_bootstrap_confidence": "--resource-buoy-bootstrap-confidence",
     "resource_buoy_bootstrap_seed": "--resource-buoy-bootstrap-seed",
+    "resource_buoy_resampling_mode": "--resource-buoy-resampling-mode",
+    "resource_buoy_block_lengths_csv": "--resource-buoy-block-lengths-csv",
+    "resource_buoy_block_length": "--resource-buoy-block-length",
+    "resource_buoy_max_block_length": "--resource-buoy-max-block-length",
     "ann_paired_bootstrap_replicates": "--ann-paired-bootstrap-replicates",
     "ann_paired_bootstrap_confidence": "--ann-paired-bootstrap-confidence",
     "ann_paired_bootstrap_seed": "--ann-paired-bootstrap-seed",
@@ -124,8 +128,7 @@ def main() -> int:
 
     config = _load_config(config_path)
     cli_args = ["validate_buoy", *_build_cli_args(config)]
-
-    return cli_main.main(cli_args)
+    return cli_main(cli_args)
 
 
 if __name__ == "__main__":

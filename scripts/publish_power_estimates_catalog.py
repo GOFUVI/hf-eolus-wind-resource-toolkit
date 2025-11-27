@@ -31,6 +31,13 @@ DEFAULT_STAC_CONFIG = REPO_ROOT / "config" / "stac_catalogs.json"
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "use_case" / "catalogs"
 DEFAULT_COLLECTION_NAME = "sar_range_final_power_estimates"
 DEFAULT_IMAGE = "duckdb/duckdb:latest"
+TABLE_EXTENSION = "https://stac-extensions.github.io/table/v1.2.0/schema.json"
+SCIENTIFIC_EXTENSION = "https://stac-extensions.github.io/scientific/v1.0.0/schema.json"
+TASK5_DOI = "10.5281/zenodo.17594220"
+TASK5_CITATION = (
+    "Herrera Cortijo, J. L., Fernández-Baladrón, A., Rosón, G., Gil Coto, M., Dubert, J., & Varela Benvenuto, R. "
+    "(2025). HF-EOLUS. Task 5. Wind Resource Estimation Results. Zenodo. https://doi.org/10.5281/zenodo.17594220"
+)
 
 COLUMN_DESCRIPTIONS: Dict[str, str] = {
     "node_id": "Spatial grid node identifier aligning with SAR range-aware ANN outputs.",
@@ -345,7 +352,7 @@ def build_stac_payloads(
     collection = {
         "type": "Collection",
         "stac_version": "1.1.0",
-        "stac_extensions": ["https://stac-extensions.github.io/table/v1.2.0/schema.json"],
+        "stac_extensions": [TABLE_EXTENSION, SCIENTIFIC_EXTENSION],
         "id": "SAR_RANGE_FINAL_POWER_ESTIMATES",
         "title": "HF-EOLUS SAR Range Final Wind Resource Estimates",
         "description": (
@@ -361,6 +368,8 @@ def build_stac_payloads(
             "GeoParquet",
         ],
         "license": "GPL-3.0",
+        "sci:doi": TASK5_DOI,
+        "sci:citation": TASK5_CITATION,
         "providers": [
             {
                 "name": "HF-EOLUS Project",
@@ -388,7 +397,7 @@ def build_stac_payloads(
     item = {
         "type": "Feature",
         "stac_version": "1.1.0",
-        "stac_extensions": ["https://stac-extensions.github.io/table/v1.2.0/schema.json"],
+        "stac_extensions": [TABLE_EXTENSION, SCIENTIFIC_EXTENSION],
         "id": "power_estimates_nodes",
         "geometry": geometry,
         "bbox": bbox,
@@ -405,6 +414,8 @@ def build_stac_payloads(
             "table:primary_geometry": "geometry",
             "hf_eolus:version": version_tag,
             "hf_eolus:code_commit": manifest["code_commit"],
+            "sci:doi": TASK5_DOI,
+            "sci:citation": TASK5_CITATION,
         },
         "links": [
             {"rel": "self", "href": "../items/power_estimates_nodes.json", "type": "application/json"},

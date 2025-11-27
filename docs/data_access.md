@@ -11,7 +11,7 @@ refresh or subset the datasets. It complements the schema reference in
 - **ANN inference (SAR range-final)**  
   STAC catalogue: `use_case/catalogs/sar_range_final_pivots_joined/collection.json`  
   Default asset: `use_case/catalogs/sar_range_final_pivots_joined/assets/data.parquet`  
-  DOI package: [10.5281/zenodo.17131227](https://doi.org/10.5281/zenodo.17131227)
+  DOI package: [10.5281/zenodo.17464583](https://doi.org/10.5281/zenodo.17464583)
 
 - **Sample buoy benchmark (Vilano)**  
   STAC catalogue: `use_case/catalogs/pde_vilano_buoy/collection.json`  
