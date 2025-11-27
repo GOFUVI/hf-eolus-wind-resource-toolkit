@@ -341,8 +341,10 @@ def load_buoy_timeseries(
         frame = frame.loc[~speed_mask].copy()
 
     # Convert explicit sentinel markers in the wind direction to missing values
-    # but keep the records so that the speed measurements remain available.
-    frame["wind_dir"] = frame["wind_dir"].astype("Int64")
+    # but keep the records so that the speed measurements remain available. Cast
+    # to numeric first to drop non-numeric tokens gracefully.
+    frame["wind_dir"] = pd.to_numeric(frame["wind_dir"], errors="coerce")
+    frame["wind_dir"] = frame["wind_dir"].astype("Float64")
     direction_mask = frame["wind_dir"] <= sentinel_config.direction_threshold
     direction_sentinel_records = int(direction_mask.sum())
     if direction_sentinel_records:
@@ -386,24 +388,52 @@ def load_ann_node_timeseries(
     dataset_path: Path | str,
     node_id: str,
     columns: Sequence[str] | None = None,
+    dataset_kind: Literal["ann", "uncensored"] = "ann",
 ) -> pd.DataFrame:
-    """Load the subset of the ANN GeoParquet corresponding to a single node."""
+    """Load the subset of the ANN GeoParquet corresponding to a single node.
 
-    if columns is None:
-        columns = (
-            "timestamp",
-            "node_id",
-            "pred_wind_speed",
-            "pred_wind_direction",
-            "pred_range_label",
-            "prob_range_below",
-            "prob_range_in",
-            "prob_range_above",
-            "range_flag",
-            "range_flag_confident",
-        )
+    When *dataset_kind* is ``uncensored`` the loader accepts a generic wind
+    time series (wind_speed/wind_dir) and maps it to the ANN schema, filling
+    range-flag columns with deterministic defaults.
+    """
 
-    frame = pd.read_parquet(dataset_path, columns=list(columns))
+    if dataset_kind not in ("ann", "uncensored"):  # pragma: no cover - defensive guard
+        raise ValueError(f"Unsupported dataset_kind={dataset_kind!r}")
+
+    if dataset_kind == "ann":
+        if columns is None:
+            columns = (
+                "timestamp",
+                "node_id",
+                "pred_wind_speed",
+                "pred_wind_direction",
+                "pred_range_label",
+                "prob_range_below",
+                "prob_range_in",
+                "prob_range_above",
+                "range_flag",
+                "range_flag_confident",
+            )
+        frame = pd.read_parquet(dataset_path, columns=list(columns))
+    else:
+        # Generic uncensored wind dataset (e.g., MeteoGalicia interpolation).
+        if columns is None:
+            columns = ("timestamp", "node_id", "wind_speed", "wind_dir")
+        frame = pd.read_parquet(dataset_path, columns=list(columns))
+        missing = [name for name in ("wind_speed", "wind_dir") if name not in frame.columns]
+        if missing:
+            raise KeyError(f"Uncensored dataset missing columns: {missing}")
+        frame = frame.copy()
+        frame["pred_wind_speed"] = frame["wind_speed"]
+        frame["pred_wind_direction"] = frame["wind_dir"]
+        frame["pred_range_label"] = "in_range"
+        frame["prob_range_below"] = 0.0
+        frame["prob_range_in"] = 1.0
+        frame["prob_range_above"] = 0.0
+        frame["range_flag"] = "in_range"
+        frame["range_flag_confident"] = True
+        frame.drop(columns=["wind_speed", "wind_dir"], inplace=True, errors="ignore")
+
     if "node_id" not in frame.columns:
         raise KeyError("ANN dataset must expose a node_id column")
 
@@ -509,6 +539,7 @@ def prepare_buoy_timeseries(
     sentinel_config: BuoySentinelConfig | None = None,
     synchronisation_config: SynchronisationConfig | None = None,
     ann_columns: Sequence[str] | None = None,
+    ann_dataset_kind: Literal["ann", "uncensored"] = "ann",
 ) -> BuoyPreparation:
     """End-to-end helper that loads, cleans, and synchronises a buoy dataset.
 
@@ -525,6 +556,7 @@ def prepare_buoy_timeseries(
         dataset_path=ann_dataset,
         node_id=node_id,
         columns=ann_columns,
+        dataset_kind=ann_dataset_kind,
     )
     matched, summary = synchronise_buoy_and_ann(
         buoy=buoy_series.dataframe,

@@ -64,22 +64,28 @@ DEFAULT_POWER_CURVE_CONFIG = REPO_ROOT / "config" / "power_curves.json"
 DEFAULT_POWER_CURVE_KEY = "reference_offshore_6mw"
 DEFAULT_HEIGHT_CONFIG = REPO_ROOT / "config" / "power_height.json"
 DEFAULT_BOOTSTRAP_SUMMARY = REPO_ROOT / "artifacts" / "bootstrap_velocity_block" / "bootstrap_summary.csv"
+DEFAULT_BOOTSTRAP_METADATA = REPO_ROOT / "artifacts" / "bootstrap_velocity_block" / "bootstrap_metadata.json"
 DEFAULT_BUOY_BLOCK_CONFIG = REPO_ROOT / "artifacts" / "buoy_validation" / "buoy_block_bootstrap.json"
-ANN_BOOTSTRAP_METADATA = REPO_ROOT / "artifacts" / "bootstrap_velocity_block" / "bootstrap_metadata.json"
+DEFAULT_BUOY_BLOCK_LENGTHS = REPO_ROOT / "artifacts" / "buoy_block_diagnostics" / "block_bootstrap_diagnostics.csv"
+DEFAULT_ANN_LABEL = "ANN"
+DEFAULT_BUOY_LABEL = "Buoy"
 DEFAULT_BUOY_BOOTSTRAP_REPLICATES = 50
 DEFAULT_BUOY_BOOTSTRAP_CONFIDENCE = 0.95
 DEFAULT_COMPARISON_CONFIG = REPO_ROOT / "config" / "buoy_comparison.json"
 IDENTITY_HEIGHT = HeightCorrection(method="none", source_height_m=1.0, target_height_m=1.0, speed_scale=1.0)
 
 
-def _load_ann_bootstrap_metadata() -> tuple[dict[str, object], dict[str, int]]:
-    if not ANN_BOOTSTRAP_METADATA.exists():
+def _load_ann_bootstrap_metadata(path: Path) -> tuple[dict[str, object], dict[str, int]]:
+    if not path.exists():
         raise FileNotFoundError(
-            f"ANN bootstrap metadata not found at {ANN_BOOTSTRAP_METADATA}. "
+            f"ANN bootstrap metadata not found at {path}. "
             "Run scripts/generate_bootstrap_uncertainty.py to generate it."
         )
-    metadata = json.loads(ANN_BOOTSTRAP_METADATA.read_text(encoding="utf-8"))
-    block_lengths_path = REPO_ROOT / metadata.get("block_lengths_csv", "")
+    metadata = json.loads(path.read_text(encoding="utf-8"))
+    block_lengths_relative = metadata.get("block_lengths_csv", "")
+    block_lengths_path = (path.parent / block_lengths_relative).resolve()
+    if not block_lengths_path.exists():
+        block_lengths_path = (REPO_ROOT / block_lengths_relative).resolve()
     node_block_lengths: dict[str, int] = {}
     if block_lengths_path.exists():
         with block_lengths_path.open("r", encoding="utf-8", newline="") as handle:
@@ -483,13 +489,15 @@ def _write_markdown_table(
     *,
     sample_count: int,
     main_report: str | None,
+    ann_label: str,
+    buoy_label: str,
 ) -> None:
     """Render a Markdown table summarising paired/global buoy validation metrics."""
 
     selection: list[tuple[str, str]] = [
-        ("ANN", "paired"),
-        ("Buoy", "paired"),
-        ("Buoy", "global"),
+        (ann_label, "paired"),
+        (buoy_label, "paired"),
+        (buoy_label, "global"),
     ]
     table_rows: list[str] = []
     header = [
@@ -831,6 +839,27 @@ def _load_comparison_config(config_path: Path | None) -> dict[str, object]:
     return dict(payload)
 
 
+def _load_block_lengths_csv(path: Path | None, *, column: str = "suggested_block_length") -> dict[str, int]:
+    if path is None:
+        return {}
+    resolved = path if path.is_absolute() else (REPO_ROOT / path)
+    if not resolved.exists():
+        return {}
+    lengths: dict[str, int] = {}
+    with resolved.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            node_id = row.get("node_id")
+            value = row.get(column)
+            if not node_id or value in (None, ""):
+                continue
+            try:
+                lengths[node_id] = max(1, int(float(value)))
+            except ValueError:
+                continue
+    return lengths
+
+
 def parse_args() -> argparse.Namespace:
     config_parser = argparse.ArgumentParser(add_help=False)
     config_parser.add_argument(
@@ -935,10 +964,40 @@ def parse_args() -> argparse.Namespace:
         help="CSV with bootstrap confidence intervals for ANN nodes (default: artifacts/bootstrap_velocity_block/bootstrap_summary.csv).",
     )
     parser.add_argument(
+        "--bootstrap-metadata",
+        type=Path,
+        default=DEFAULT_BOOTSTRAP_METADATA,
+        help="JSON metadata describing the ANN bootstrap run (default: artifacts/bootstrap_velocity_block/bootstrap_metadata.json).",
+    )
+    parser.add_argument(
         "--buoy-block-config",
         type=Path,
         default=DEFAULT_BUOY_BLOCK_CONFIG,
         help="JSON with buoy dependence diagnostics (default: artifacts/buoy_validation/buoy_block_bootstrap.json).",
+    )
+    parser.add_argument(
+        "--buoy-resampling-mode",
+        choices=("iid", "moving_block", "stationary"),
+        default=None,
+        help="Resampling strategy for buoy bootstrap (defaults to ANN mode when unset).",
+    )
+    parser.add_argument(
+        "--buoy-block-length",
+        type=int,
+        default=None,
+        help="Explicit block length for buoy bootstrap (overrides CSV/config when set).",
+    )
+    parser.add_argument(
+        "--buoy-block-lengths-csv",
+        type=Path,
+        default=DEFAULT_BUOY_BLOCK_LENGTHS,
+        help="CSV with per-node block-length recommendations (default: artifacts/buoy_block_diagnostics/block_bootstrap_diagnostics.csv).",
+    )
+    parser.add_argument(
+        "--buoy-max-block-length",
+        type=int,
+        default=None,
+        help="Cap the buoy block length when using recommendations (optional).",
     )
     parser.add_argument(
         "--buoy-bootstrap-replicates",
@@ -971,6 +1030,16 @@ def parse_args() -> argparse.Namespace:
         "--ann-paired-bootstrap-seed",
         type=int,
         help="Random seed for the ANN paired bootstrap resampling.",
+    )
+    parser.add_argument(
+        "--ann-label",
+        default=DEFAULT_ANN_LABEL,
+        help="Dataset label used for ANN rows in the outputs (default: ANN).",
+    )
+    parser.add_argument(
+        "--buoy-label",
+        default=DEFAULT_BUOY_LABEL,
+        help="Dataset label used for buoy rows in the outputs (default: Buoy).",
     )
     parser.add_argument(
         "--overwrite",
@@ -1804,6 +1873,8 @@ def _write_csv(path: Path, rows: Iterable[Mapping[str, object]]) -> None:
 
 def main() -> None:
     args = parse_args()
+    ann_label = args.ann_label
+    buoy_label = args.buoy_label
 
     output_dir = _resolve_with_root(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1863,19 +1934,40 @@ def main() -> None:
         tail_surrogate=tail_surrogate,
         km_criteria=km_criteria,
     )
-    metadata, node_block_lengths = _load_ann_bootstrap_metadata()
+    bootstrap_metadata_path = _resolve_with_root(args.bootstrap_metadata)
+    metadata: dict[str, object]
+    node_block_lengths: dict[str, int]
+    try:
+        metadata, node_block_lengths = _load_ann_bootstrap_metadata(bootstrap_metadata_path)
+    except FileNotFoundError:
+        ann_replicates = args.ann_paired_bootstrap_replicates
+        if ann_replicates is None or ann_replicates > 0:
+            raise
+        metadata = {}
+        node_block_lengths = {}
     ann_resampling_mode = str(metadata.get("resampling_mode", "iid"))
     ann_base_block_length = int(metadata.get("block_length", 1))
     node_block_length = int(node_block_lengths.get(args.node_id, ann_base_block_length))
     buoy_block_config = _load_buoy_block_config(_resolve_with_root(args.buoy_block_config))
-    buoy_resampling_mode = str(buoy_block_config.get("resampling_mode", ann_resampling_mode))
+    buoy_resampling_mode = str(
+        args.buoy_resampling_mode or buoy_block_config.get("resampling_mode", ann_resampling_mode)
+    )
     if buoy_resampling_mode not in {"iid", "moving_block", "stationary"}:
         buoy_resampling_mode = ann_resampling_mode
+
+    buoy_block_lengths = _load_block_lengths_csv(_resolve_with_root(args.buoy_block_lengths_csv))
     buoy_block_length_value = buoy_block_config.get("suggested_block_length", buoy_block_config.get("block_length"))
+    if args.buoy_block_length is not None:
+        buoy_block_length_value = args.buoy_block_length
+    elif args.node_id in buoy_block_lengths:
+        buoy_block_length_value = buoy_block_lengths[args.node_id]
+
     try:
         buoy_block_length = int(buoy_block_length_value) if buoy_block_length_value is not None else node_block_length
     except (TypeError, ValueError):
         buoy_block_length = node_block_length
+    if args.buoy_max_block_length is not None and args.buoy_max_block_length > 0:
+        buoy_block_length = min(buoy_block_length, int(args.buoy_max_block_length))
     if buoy_block_length <= 0:
         buoy_block_length = node_block_length
 
@@ -2103,6 +2195,10 @@ def main() -> None:
             "mode": buoy_resampling_mode,
             "block_length": buoy_block_length,
             "source": str(_resolve_with_root(args.buoy_block_config)),
+            "block_lengths_csv": str(_resolve_with_root(args.buoy_block_lengths_csv)),
+            "max_block_length": args.buoy_max_block_length,
+            "block_length_override": args.buoy_block_length,
+            "resampling_mode_override": args.buoy_resampling_mode,
         },
         "power_curve": {
             "name": power_curve.name,
@@ -2133,7 +2229,7 @@ def main() -> None:
 
     csv_rows = [
         _build_row(
-            dataset="ANN",
+            dataset=ann_label,
             scope="paired",
             sample_metrics=ann_metrics,
             sample_ci=ann_paired_ci,
@@ -2142,7 +2238,7 @@ def main() -> None:
             censoring=censoring_summary,
         ),
         _build_row(
-            dataset="ANN",
+            dataset=ann_label,
             scope="global",
             sample_metrics=ann_global_metrics,
             sample_ci=ann_global_ci,
@@ -2151,7 +2247,7 @@ def main() -> None:
             censoring=None,
         ),
         _build_row(
-            dataset="Buoy",
+            dataset=buoy_label,
             scope="paired",
             sample_metrics=buoy_metrics,
             sample_ci=buoy_paired_sample_ci,
@@ -2160,7 +2256,7 @@ def main() -> None:
             censoring=None,
         ),
         _build_row(
-            dataset="Buoy",
+            dataset=buoy_label,
             scope="global",
             sample_metrics=buoy_global_metrics,
             sample_ci=buoy_global_sample_ci,
@@ -2169,7 +2265,7 @@ def main() -> None:
             censoring=None,
         ),
         _build_row(
-            dataset="Buoy",
+            dataset=buoy_label,
             scope="global_censored",
             sample_metrics=buoy_global_censored_metrics,
             sample_ci=buoy_global_censored_sample_ci,
@@ -2186,13 +2282,15 @@ def main() -> None:
         csv_rows,
         sample_count=sample_count,
         main_report="docs/empirical_metrics_summary.md",
+        ann_label=ann_label,
+        buoy_label=buoy_label,
     )
     bias_svg_path = output_dir / "resource_bias.svg"
     _write_bias_svg(
         bias_svg_path,
         differences=differences.get("paired"),
-        paired_ann=_find_row(csv_rows, "ANN", "paired"),
-        paired_buoy=_find_row(csv_rows, "Buoy", "paired"),
+        paired_ann=_find_row(csv_rows, ann_label, "paired"),
+        paired_buoy=_find_row(csv_rows, buoy_label, "paired"),
         sample_count=sample_count,
     )
 

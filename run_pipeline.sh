@@ -116,7 +116,23 @@ docker run --rm \
     "${MAX_NODE_ARGS[@]}"
 
 if [[ -n "${BUOY_VALIDATION_CONFIG:-}" ]]; then
-  echo "[8/8] Validating ANN winds against the configured buoy reference"
+  echo "[8/8a] Computing buoy block diagnostics"
+  docker run --rm \
+    -v "$(pwd)":/workspace \
+    -w /workspace \
+    --entrypoint python \
+    wind-resource-tests \
+    scripts/evaluate_bootstrap_dependence.py \
+      --dataset use_case/catalogs/pde_vilano_buoy/assets/Vilano.parquet \
+      --output-dir artifacts/buoy_block_diagnostics \
+      --lags 1 2 3 \
+      --dataset-kind uncensored \
+      --node-column none \
+      --node-id PdE_Vilano
+fi
+
+if [[ -n "${BUOY_VALIDATION_CONFIG:-}" ]]; then
+  echo "[8/8b] Validating ANN winds against the configured buoy reference"
   PYTHONPATH=src python3 scripts/run_buoy_validation_from_config.py \
     --config "${BUOY_VALIDATION_CONFIG}"
 else

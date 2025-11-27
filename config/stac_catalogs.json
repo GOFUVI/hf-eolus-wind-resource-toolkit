@@ -3,7 +3,7 @@
     "collection": "use_case/catalogs/sar_range_final_pivots_joined/collection.json",
     "default_item": "data",
     "default_asset": "data",
-    "doi": "10.5281/zenodo.17131227",
+    "doi": "10.5281/zenodo.17464583",
     "notes": [
       "HF-EOLUS ANN demo snapshot (VILA + PRIO nodes, SAR range-aware inversion).",
       "Override the collection path and DOI when wiring a different ANN dataset."

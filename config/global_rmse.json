@@ -2,7 +2,7 @@
   "schema_version": "2025-10-18",
   "template": {
     "name": "HF-EOLUS Vilano buoy comparison",
-    "ann_dataset_doi": "10.5281/zenodo.17131227",
+    "ann_dataset_doi": "10.5281/zenodo.17464583",
     "buoy_dataset_doi": "10.5281/zenodo.17098037",
     "notes": [
       "Example RMSE catalogue derived from the ANN vs. Vilano buoy validation delivered by HF-EOLUS (Task 5).",
@@ -16,11 +16,11 @@
       "unit": "m/s",
       "effective_from": "2025-10-18T00:00:00Z",
       "effective_until": null,
-      "source": "HF-EOLUS ANN vs. Vilano buoy benchmark datasets (DOI: 10.5281/zenodo.17131227 / 10.5281/zenodo.17098037)",
+      "source": "HF-EOLUS ANN vs. Vilano buoy benchmark datasets (DOI: 10.5281/zenodo.17464583 / 10.5281/zenodo.17098037)",
       "computed_at": "2025-10-18T00:00:00Z",
       "notes": [
-        "RMSE computed on the within-range and classification-matched subset of the HF-EOLUS ANN vs. Vilano buoy benchmark published in Zenodo (10.5281/zenodo.17131227 / 10.5281/zenodo.17098037).",
-        "Datasets: ANN inference DOI 10.5281/zenodo.17131227; Vilano buoy DOI 10.5281/zenodo.17098037."
+        "RMSE computed on the within-range and classification-matched subset of the HF-EOLUS ANN vs. Vilano buoy benchmark published in Zenodo (10.5281/zenodo.17464583 / 10.5281/zenodo.17098037).",
+        "Datasets: ANN inference DOI 10.5281/zenodo.17464583; Vilano buoy DOI 10.5281/zenodo.17098037."
       ]
     }
   ]

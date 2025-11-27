@@ -13,7 +13,7 @@ import subprocess
 import textwrap
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, MutableSet, Tuple
+from typing import Dict, Iterable, List, Mapping, MutableSet, Sequence, Tuple
 
 import sys
 
@@ -24,6 +24,8 @@ from hf_wind_resource.io import resolve_catalog_asset
 from hf_wind_resource.stats import (
     BootstrapConfidenceInterval,
     BootstrapUncertaintyResult,
+    GlobalRmseProvider,
+    GlobalRmseRecord,
     HeightCorrection,
     NodeBootstrapInput,
     StratifiedBootstrapConfig,
@@ -59,12 +61,59 @@ def _prepare_output_directory(target: Path) -> None:
     target.mkdir(parents=True, exist_ok=True)
 
 
-def _build_sql(dataset: Path, *, max_nodes: int | None = None) -> str:
+def _build_rmse_provider(value: float | None, source: str | None) -> GlobalRmseProvider | None:
+    if value is None:
+        return None
+
+    note = "User-provided RMSE for bootstrap uncertainty."
+
+    def loader() -> Sequence[GlobalRmseRecord]:
+        now = datetime.now(timezone.utc)
+        record = GlobalRmseRecord(
+            version="custom",
+            value=float(value),
+            unit="m/s",
+            effective_from=now,
+            effective_until=None,
+            source=source or "user_provided",
+            computed_at=now,
+            notes=(note,),
+        )
+        return (record,)
+
+    return GlobalRmseProvider(loader=loader)
+
+
+def _build_sql(dataset: Path, *, max_nodes: int | None = None, dataset_kind: str = "ann") -> str:
     limit_clause = ""
     if max_nodes is not None:
         limit_clause = f"\nLIMIT {max_nodes}"
 
     dataset_literal = dataset.as_posix()
+
+    if dataset_kind == "uncensored":
+        select_clause = textwrap.dedent(
+            """
+            SELECT
+                node_id,
+                LIST(
+                    struct_pack(
+                        "timestamp" := timestamp,
+                        "pred_wind_speed" := wind_speed,
+                        "prob_range_below" := 0.0,
+                        "prob_range_in" := 1.0,
+                        "prob_range_above" := 0.0,
+                        "range_flag" := 'in_range',
+                        "range_flag_confident" := TRUE
+                    )
+                    ORDER BY timestamp
+                ) AS records
+            FROM read_parquet('{dataset}')
+            GROUP BY node_id
+            ORDER BY node_id{limit};
+            """
+        )
+        return select_clause.format(dataset=dataset_literal, limit=limit_clause)
 
     return textwrap.dedent(
         f"""
@@ -234,8 +283,16 @@ def _summarise_result(result: BootstrapUncertaintyResult) -> dict[str, object]:
     return _summarise_results([result])[0]
 
 
-def _compute_node_summary(item: NodeBootstrapInput, config: StratifiedBootstrapConfig) -> dict[str, object]:
-    result = compute_stratified_bootstrap_uncertainty(item, config=config)
+def _compute_node_summary(
+    item: NodeBootstrapInput,
+    config: StratifiedBootstrapConfig,
+    rmse_provider: GlobalRmseProvider | None,
+) -> dict[str, object]:
+    result = compute_stratified_bootstrap_uncertainty(
+        item,
+        config=config,
+        rmse_provider=rmse_provider,
+    )
     return _summarise_result(result)
 
 
@@ -267,6 +324,7 @@ def _process_nodes(
     inputs: Iterable[NodeBootstrapInput],
     *,
     config: StratifiedBootstrapConfig,
+    rmse_provider: GlobalRmseProvider | None,
     partial_path: Path,
     resume: bool,
     progress_interval: int,
@@ -292,6 +350,10 @@ def _process_nodes(
     else:
         effective_workers = max(1, effective_workers)
 
+    if rmse_provider is not None and effective_workers > 1:
+        logger.info("RMSE override detected; forcing sequential execution to keep the custom provider in-process.")
+        effective_workers = 1
+
     logger.info(
         "Starting bootstrap evaluation for %d nodes (resume=%s, already processed=%d)",
         total,
@@ -304,7 +366,7 @@ def _process_nodes(
 
     if effective_workers == 1:
         for item in pending_items:
-            row = _compute_node_summary(item, config)
+            row = _compute_node_summary(item, config, rmse_provider)
             _append_partial_row(partial_path, row)
             rows.append(row)
             processed_ids.add(item.node_id)
@@ -326,7 +388,7 @@ def _process_nodes(
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=effective_workers) as executor:
         future_to_item = {
-            executor.submit(_compute_node_summary, item, config): item for item in pending_items
+            executor.submit(_compute_node_summary, item, config, rmse_provider): item for item in pending_items
         }
         for future in concurrent.futures.as_completed(future_to_item):
             item = future_to_item[future]
@@ -490,6 +552,10 @@ def _write_metadata(
         "workers_requested": args.workers,
         "workers_used": workers,
     }
+    if args.rmse is not None:
+        payload["rmse_override"] = float(args.rmse)
+    if args.rmse_source is not None:
+        payload["rmse_override_source"] = args.rmse_source
     destination.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
@@ -509,6 +575,17 @@ def main() -> None:
     parser.add_argument("--right-tail-surrogate", type=float, default=None, help="Optional surrogate wind speed for right-censored mass")
     parser.add_argument("--min-confidence", type=float, default=0.5, help="Minimum confidence threshold for range labels")
     parser.add_argument("--min-in-range", type=float, default=500.0, help="Minimum in-range weight expected for Weibull fits")
+    parser.add_argument(
+        "--rmse",
+        type=float,
+        default=None,
+        help="Override the RMSE value (m/s) used for noise and reporting.",
+    )
+    parser.add_argument(
+        "--rmse-source",
+        default=None,
+        help="Optional source label recorded when --rmse is provided.",
+    )
     parser.add_argument("--replicas", type=int, default=500, help="Number of bootstrap replicas")
     parser.add_argument("--confidence", type=float, default=0.95, help="Confidence level for the intervals")
     parser.add_argument("--seed", type=int, default=None, help="Random seed for the bootstrap")
@@ -575,6 +652,12 @@ def main() -> None:
         default=0,
         help="Number of parallel worker processes (0 selects cpu_count).",
     )
+    parser.add_argument(
+        "--dataset-kind",
+        choices=("ann", "uncensored"),
+        default="ann",
+        help="Schema of the input dataset: 'ann' for inference outputs, 'uncensored' for generic wind series.",
+    )
 
     args = parser.parse_args()
 
@@ -590,6 +673,7 @@ def main() -> None:
 
     power_curve = _load_power_curve(args.power_curve_config, args.power_curve_key)
     km_criteria = load_kaplan_meier_selection_criteria(args.km_criteria_config)
+    rmse_provider = _build_rmse_provider(args.rmse, args.rmse_source)
 
     default_height = HeightCorrection(method="none", source_height_m=10.0, target_height_m=10.0, speed_scale=1.0)
     height_corrections = _load_height_corrections(args.node_summary)
@@ -620,7 +704,7 @@ def main() -> None:
         km_criteria=km_criteria,
     )
 
-    sql = _build_sql(dataset, max_nodes=args.max_nodes)
+    sql = _build_sql(dataset, max_nodes=args.max_nodes, dataset_kind=args.dataset_kind)
     inputs_path = output_dir / INPUT_FILENAME
     _run_duckdb_export(sql, workdir=output_dir, image=args.image, destination=inputs_path, engine=args.engine)
 
@@ -629,6 +713,7 @@ def main() -> None:
     rows, used_workers = _process_nodes(
         inputs,
         config=config,
+        rmse_provider=rmse_provider,
         partial_path=partial_path,
         resume=args.resume,
         progress_interval=max(0, args.progress_interval),

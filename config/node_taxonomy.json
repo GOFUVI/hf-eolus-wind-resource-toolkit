@@ -4,7 +4,7 @@
   "generated_at": "2025-11-05T14:28:09.615268+00:00",
   "template": {
     "name": "HF-EOLUS SAR range-final node taxonomy",
-    "dataset_doi": "10.5281/zenodo.17131227",
+    "dataset_doi": "10.5281/zenodo.17464583",
     "notes": [
       "Example taxonomy derived from the HF-EOLUS ANN snapshot published on Zenodo; regenerate with scripts/update_node_taxonomy.py when ingesting a new GeoParquet.",
       "Low-coverage heuristics and band thresholds mirror config/low_coverage_rules.json and config/taxonomy_bands.json; adjust those configs before rebuilding the taxonomy for other deployments."

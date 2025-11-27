@@ -27,6 +27,7 @@ from hf_wind_resource.stats import (
 DEFAULT_OUTPUT_DIR = Path("artifacts/bootstrap_uncertainty")
 DEFAULT_STAC_CONFIG = Path("config/stac_catalogs.json")
 DEFAULT_STAC_DATASET = "sar_range_final_pivots_joined"
+DATASET_KIND_CHOICES = ("ann", "uncensored")
 
 
 logger = logging.getLogger("evaluate_bootstrap_dependence")
@@ -68,6 +69,22 @@ def main() -> None:
     parser.add_argument("--min-pairs", type=int, default=30, help="Minimum pairs to report an autocorrelation")
     parser.add_argument("--max-block-length", type=int, default=None, help="Optional cap for suggested block length")
     parser.add_argument(
+        "--dataset-kind",
+        choices=DATASET_KIND_CHOICES,
+        default="ann",
+        help="Interpret input schema: ann (pred_wind_speed) or uncensored (wind_speed).",
+    )
+    parser.add_argument(
+        "--node-column",
+        default="node_id",
+        help="Node identifier column; use 'none' to inject a constant node id.",
+    )
+    parser.add_argument(
+        "--node-id",
+        default="default_node",
+        help="Node id used when --node-column is 'none'.",
+    )
+    parser.add_argument(
         "--acf-thresholds",
         type=float,
         nargs="+",
@@ -93,11 +110,20 @@ def main() -> None:
 
     logger.info("Analysing dataset %s", dataset)
 
+    node_column = args.node_column
+    if node_column and str(node_column).lower() == "none":
+        node_column_value = None
+    else:
+        node_column_value = node_column
+
     metrics = compute_node_dependence_metrics(
         dataset,
         lags=tuple(args.lags),
         min_pairs=args.min_pairs,
         max_block_length=args.max_block_length,
+        dataset_kind=args.dataset_kind,
+        node_column=node_column_value,
+        node_id_override=args.node_id,
     )
 
     logger.info("Computed dependence metrics for %d nodes", len(metrics))

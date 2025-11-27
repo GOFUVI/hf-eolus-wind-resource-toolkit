@@ -587,6 +587,46 @@ def _handle_compute_resource(args: argparse.Namespace) -> int:
     return 0
 
 
+def _handle_uncensored_resource(args: argparse.Namespace) -> int:
+    logger = _build_logger(args.verbose)
+    repo_root = _resolve_repo_root()
+
+    command: list[str] = [
+        sys.executable,
+        "scripts/generate_uncensored_resource.py",
+        "--config",
+        str(args.config),
+    ]
+    if args.dataset is not None:
+        command.extend(["--dataset", str(args.dataset)])
+    if args.stac_config is not None:
+        command.extend(["--stac-config", str(args.stac_config)])
+    if args.stac_dataset is not None:
+        command.extend(["--stac-dataset", args.stac_dataset])
+    if args.asset_key is not None:
+        command.extend(["--asset-key", args.asset_key])
+    if args.output_dir is not None:
+        command.extend(["--output-dir", str(args.output_dir)])
+    if args.rmse is not None:
+        command.extend(["--rmse", str(args.rmse)])
+    if args.rmse_source is not None:
+        command.extend(["--rmse-source", args.rmse_source])
+    if args.speed_column is not None:
+        command.extend(["--speed-column", args.speed_column])
+    if args.node_column is not None:
+        command.extend(["--node-column", args.node_column])
+    if args.timestamp_column is not None:
+        command.extend(["--timestamp-column", args.timestamp_column])
+
+    _run_python_with_backend(
+        command,
+        repo_root=repo_root,
+        logger=logger,
+        backend=args.python_backend,
+    )
+    return 0
+
+
 def _handle_validate_buoy(args: argparse.Namespace) -> int:
     logger = _build_logger(args.verbose)
     repo_root = _resolve_repo_root()
@@ -631,6 +671,8 @@ def _handle_validate_buoy(args: argparse.Namespace) -> int:
         command_prepare.extend(["--power-law-alpha", str(args.buoy_power_law_alpha)])
     if args.buoy_roughness_length is not None:
         command_prepare.extend(["--roughness-length-m", str(args.buoy_roughness_length)])
+    if args.ann_kind is not None:
+        command_prepare.extend(["--ann-kind", args.ann_kind])
 
     _run_python_with_backend(
         command_prepare,
@@ -696,6 +738,14 @@ def _handle_validate_buoy(args: argparse.Namespace) -> int:
         command_resource.extend(
             ["--bootstrap-summary", _relative_to_repo(args.resource_bootstrap_summary, repo_root)]
         )
+    if args.resource_bootstrap_metadata is not None:
+        command_resource.extend(
+            ["--bootstrap-metadata", _relative_to_repo(args.resource_bootstrap_metadata, repo_root)]
+        )
+    if args.resource_ann_label is not None:
+        command_resource.extend(["--ann-label", args.resource_ann_label])
+    if args.resource_buoy_label is not None:
+        command_resource.extend(["--buoy-label", args.resource_buoy_label])
     if args.resource_right_tail_surrogate is not None:
         command_resource.extend(["--right-tail-surrogate", str(args.resource_right_tail_surrogate)])
     if args.resource_km_criteria_config is not None:
@@ -708,6 +758,16 @@ def _handle_validate_buoy(args: argparse.Namespace) -> int:
         command_resource.extend(["--buoy-bootstrap-confidence", str(args.resource_buoy_bootstrap_confidence)])
     if args.resource_buoy_bootstrap_seed is not None:
         command_resource.extend(["--buoy-bootstrap-seed", str(args.resource_buoy_bootstrap_seed)])
+    if args.resource_buoy_resampling_mode is not None:
+        command_resource.extend(["--buoy-resampling-mode", args.resource_buoy_resampling_mode])
+    if args.resource_buoy_block_lengths_csv is not None:
+        command_resource.extend(
+            ["--buoy-block-lengths-csv", _relative_to_repo(args.resource_buoy_block_lengths_csv, repo_root)]
+        )
+    if args.resource_buoy_block_length is not None:
+        command_resource.extend(["--buoy-block-length", str(args.resource_buoy_block_length)])
+    if args.resource_buoy_max_block_length is not None:
+        command_resource.extend(["--buoy-max-block-length", str(args.resource_buoy_max_block_length)])
     if args.ann_paired_bootstrap_replicates is not None:
         command_resource.extend(["--ann-paired-bootstrap-replicates", str(args.ann_paired_bootstrap_replicates)])
     if args.ann_paired_bootstrap_confidence is not None:
@@ -879,6 +939,63 @@ def build_parser() -> argparse.ArgumentParser:
 
     compute.set_defaults(func=_handle_compute_resource)
 
+    uncensored = subparsers.add_parser(
+        "compute_uncensored_resource",
+        help="Estimate uncensored (buoy-like) wind-resource metrics with a user-provided RMSE.",
+    )
+    uncensored.add_argument(
+        "--config",
+        type=Path,
+        default=Path("config/uncensored_resource.json"),
+        help="JSON configuration file for uncensored resource estimation.",
+    )
+    uncensored.add_argument("--dataset", type=Path, help="Direct path to the uncensored GeoParquet dataset.")
+    uncensored.add_argument(
+        "--stac-config",
+        type=Path,
+        default=Path("config/stac_catalogs.json"),
+        help="Path to the STAC catalog index JSON (used when --dataset is omitted).",
+    )
+    uncensored.add_argument(
+        "--stac-dataset",
+        help="Dataset key inside the STAC catalog (ignored when --dataset is provided).",
+    )
+    uncensored.add_argument("--asset-key", help="Asset key inside the STAC item (default: data).")
+    uncensored.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Destination directory for resource outputs (overrides the configuration).",
+    )
+    uncensored.add_argument(
+        "--rmse",
+        type=float,
+        help="Override the RMSE value (m/s) declared in the configuration.",
+    )
+    uncensored.add_argument(
+        "--rmse-source",
+        help="Optional source string recorded next to the RMSE value.",
+    )
+    uncensored.add_argument(
+        "--speed-column",
+        help="Wind-speed column name when different from the configuration.",
+    )
+    uncensored.add_argument(
+        "--node-column",
+        help="Node identifier column name when different from the configuration.",
+    )
+    uncensored.add_argument(
+        "--timestamp-column",
+        help="Timestamp column name when different from the configuration.",
+    )
+    uncensored.add_argument(
+        "--python-backend",
+        choices=["auto", "host", "docker"],
+        default="auto",
+        help="Python execution backend (host by default with Docker fallback).",
+    )
+    uncensored.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging.")
+    uncensored.set_defaults(func=_handle_uncensored_resource)
+
     validate = subparsers.add_parser(
         "validate_buoy",
         help="Prepare the buoy validation dataset and generate comparison diagnostics.",
@@ -893,6 +1010,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--ann-dataset",
         type=Path,
         help="Direct path to the ANN GeoParquet snapshot (defaults to STAC resolution).",
+    )
+    validate.add_argument(
+        "--ann-kind",
+        choices=("ann", "uncensored"),
+        default="ann",
+        help=(
+            "Interpretation of --ann-dataset: 'ann' for standard inference outputs, "
+            "'uncensored' for generic wind series without pred_* columns (e.g., interpolated models)."
+        ),
     )
     validate.add_argument(
         "--stac-config",
@@ -1016,6 +1142,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Existing bootstrap summary CSV used to retrieve confidence intervals for the ANN node.",
     )
     validate.add_argument(
+        "--resource-bootstrap-metadata",
+        type=Path,
+        default=Path("artifacts/bootstrap_velocity_block/bootstrap_metadata.json"),
+        help="Metadata JSON describing the ANN bootstrap run used for confidence intervals.",
+    )
+    validate.add_argument(
+        "--resource-ann-label",
+        default="ANN",
+        help="Dataset label used for ANN rows in the resource comparison outputs.",
+    )
+    validate.add_argument(
+        "--resource-buoy-label",
+        default="Buoy",
+        help="Dataset label used for buoy rows in the resource comparison outputs.",
+    )
+    validate.add_argument(
         "--resource-right-tail-surrogate",
         type=float,
         help="Override the surrogate speed assigned to right-censored probability mass.",
@@ -1065,6 +1207,27 @@ def build_parser() -> argparse.ArgumentParser:
         "--resource-buoy-bootstrap-seed",
         type=int,
         help="Random seed used when bootstrapping buoy statistics.",
+    )
+    validate.add_argument(
+        "--resource-buoy-resampling-mode",
+        choices=("iid", "moving_block", "stationary"),
+        help="Resampling mode for buoy bootstrap (defaults to ANN mode when omitted).",
+    )
+    validate.add_argument(
+        "--resource-buoy-block-lengths-csv",
+        type=Path,
+        default=Path("artifacts/buoy_block_diagnostics/block_bootstrap_diagnostics.csv"),
+        help="CSV with per-node block-length recommendations for the buoy (optional).",
+    )
+    validate.add_argument(
+        "--resource-buoy-block-length",
+        type=int,
+        help="Explicit block length for buoy bootstrap (overrides CSV/config when set).",
+    )
+    validate.add_argument(
+        "--resource-buoy-max-block-length",
+        type=int,
+        help="Cap the buoy block length when using recommendations (optional).",
     )
     validate.add_argument(
         "--ann-paired-bootstrap-replicates",
